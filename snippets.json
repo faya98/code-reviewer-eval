@@ -1,0 +1,74 @@
+[
+  {
+    "id": "py-buggy-mutable-default",
+    "language": "python",
+    "category": "buggy",
+    "code": "def append_user(name, history=[]):\n    history.append(name)\n    return history\n\nfirst = append_user(\"alice\")\nsecond = append_user(\"bob\")\nprint(second)  # expected: ['bob']  actual: ['alice', 'bob']",
+    "expected_dimensions": ["maintainability"],
+    "expected_assessment": "needs_work",
+    "notes": "Classic Python mutable-default-arg trap. A correct review must flag this as a major defect."
+  },
+  {
+    "id": "ts-buggy-missing-await",
+    "language": "typescript",
+    "category": "buggy",
+    "code": "async function fetchUser(id: string) {\n  const res = fetch(`/api/users/${id}`);\n  const data = res.json();\n  return data;\n}",
+    "expected_dimensions": ["maintainability"],
+    "expected_assessment": "needs_work",
+    "notes": "Missing await on both fetch and res.json(). Returns unresolved Promises rather than data. A correct review must flag this as a major defect."
+  },
+  {
+    "id": "py-subtle-god-function",
+    "language": "python",
+    "category": "subtle",
+    "code": "def process_order(order):\n    if order['status'] != 'pending':\n        return None\n    total = 0\n    for item in order['items']:\n        if item['quantity'] <= 0:\n            continue\n        price = item['price']\n        if item.get('discount'):\n            price = price * (1 - item['discount'])\n        if order.get('member'):\n            price = price * 0.9\n        total += price * item['quantity']\n    if total > 100:\n        shipping = 0\n    else:\n        shipping = 10\n    order['total'] = total + shipping\n    order['status'] = 'processed'\n    return order",
+    "expected_dimensions": ["structure", "maintainability"],
+    "expected_assessment": "needs_work",
+    "notes": "God function mixing validation, pricing, discount application, shipping calculation, and mutation. Should be flagged on structure (decomposition) and maintainability (mutates input)."
+  },
+  {
+    "id": "ts-subtle-deep-nesting",
+    "language": "typescript",
+    "category": "subtle",
+    "code": "function checkAccess(user: User | null, doc: Doc | null): boolean {\n  if (user) {\n    if (user.active) {\n      if (doc) {\n        if (doc.owner === user.id) {\n          return true;\n        } else {\n          if (doc.sharedWith.includes(user.id)) {\n            return true;\n          } else {\n            return false;\n          }\n        }\n      } else {\n        return false;\n      }\n    } else {\n      return false;\n    }\n  } else {\n    return false;\n  }\n}",
+    "expected_dimensions": ["readability", "structure"],
+    "expected_assessment": "needs_work",
+    "notes": "Pyramid of doom. Should be flagged on readability and structure. Fix is guard clauses / early returns."
+  },
+  {
+    "id": "py-well-written-1",
+    "language": "python",
+    "category": "well-written",
+    "code": "def parse_iso_duration(value: str) -> timedelta:\n    \"\"\"Parse an ISO 8601 duration like 'PT1H30M' into a timedelta.\"\"\"\n    match = _ISO_DURATION_RE.fullmatch(value)\n    if not match:\n        raise ValueError(f\"not an ISO 8601 duration: {value!r}\")\n    hours, minutes, seconds = (int(g or 0) for g in match.groups())\n    return timedelta(hours=hours, minutes=minutes, seconds=seconds)",
+    "expected_dimensions": [],
+    "expected_assessment": "exemplary",
+    "notes": "Negative control. Clean code: clear docstring, single responsibility, guard clause, idiomatic generator expression. A reviewer must NOT manufacture major defects. All three improvements must be severity:nit."
+  },
+  {
+    "id": "ts-well-written-1",
+    "language": "typescript",
+    "category": "well-written",
+    "code": "type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };\n\nexport async function safeJson<T>(\n  res: Response,\n): Promise<Result<T, SyntaxError>> {\n  try {\n    const value = (await res.json()) as T;\n    return { ok: true, value };\n  } catch (err) {\n    return { ok: false, error: err as SyntaxError };\n  }\n}",
+    "expected_dimensions": [],
+    "expected_assessment": "exemplary",
+    "notes": "Negative control. Idiomatic discriminated-union Result type, narrow error type, awaited correctly. A reviewer must NOT manufacture major defects. All three improvements must be severity:nit."
+  },
+  {
+    "id": "py-edge-sql-injection",
+    "language": "python",
+    "category": "edge",
+    "code": "from flask import request\n\n@app.route('/search')\ndef search():\n    q = request.args.get('q', '')\n    rows = db.execute(f\"SELECT id, title FROM articles WHERE title LIKE '%{q}%'\")\n    return jsonify([dict(r) for r in rows.fetchall()])",
+    "expected_dimensions": ["maintainability"],
+    "expected_assessment": "needs_work",
+    "notes": "SQL injection via f-string concatenation of user input. A correct review must flag this as a major security defect under maintainability (or readability if argued)."
+  },
+  {
+    "id": "ts-edge-any-leak",
+    "language": "typescript",
+    "category": "edge",
+    "code": "export function pluck<T>(items: any[], key: string): T[] {\n  return items.map((it) => it[key]);\n}\n\nconst names = pluck<string>(users, 'name');\nconst ages: number[] = pluck(users, 'age');",
+    "expected_dimensions": ["maintainability"],
+    "expected_assessment": "needs_work",
+    "notes": "Generic T is asserted but inputs are any[] and key is a free-form string. Caller's type claim is unchecked. Should be flagged as a major maintainability/type-safety issue. Fix: `<T, K extends keyof T>(items: T[], key: K): T[K][]`."
+  }
+]
