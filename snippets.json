@@ -48,10 +48,10 @@
     "id": "ts-well-written-1",
     "language": "typescript",
     "category": "well-written",
-    "code": "type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };\n\nexport async function safeJson<T>(\n  res: Response,\n): Promise<Result<T, SyntaxError>> {\n  try {\n    const value = (await res.json()) as T;\n    return { ok: true, value };\n  } catch (err) {\n    return { ok: false, error: err as SyntaxError };\n  }\n}",
+    "code": "export function debounce<Args extends unknown[]>(\n  fn: (...args: Args) => void,\n  waitMs: number,\n): (...args: Args) => void {\n  let timer: ReturnType<typeof setTimeout> | undefined;\n  return (...args: Args): void => {\n    if (timer !== undefined) {\n      clearTimeout(timer);\n    }\n    timer = setTimeout(() => fn(...args), waitMs);\n  };\n}",
     "expected_dimensions": [],
     "expected_assessment": "exemplary",
-    "notes": "Negative control. Idiomatic discriminated-union Result type, narrow error type, awaited correctly. A reviewer must NOT manufacture major defects. All three improvements must be severity:nit."
+    "notes": "Negative control. Variadic generic args, explicit timer-handle type via ReturnType<typeof setTimeout>, proper narrowing with !== undefined, no type assertions. A reviewer must NOT manufacture major defects. All three improvements must be severity:nit. (Previous ts-well-written-1 used an `as T` cast on res.json() output; the eval correctly flagged it as a real type-safety concern, exposing a labeling bug in the dataset. Snippet replaced.)"
   },
   {
     "id": "py-edge-sql-injection",
